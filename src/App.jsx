@@ -3,8 +3,6 @@ import {
   MapPin,
   Calendar,
   Clock,
-  VolumeX,
-  Volume2,
   CheckCircle2,
   XCircle,
   ChevronLeft,
@@ -56,30 +54,53 @@ export default function App() {
     setParticles(generated);
   }, []);
 
-  // Audio handler with user gesture fallback
+  // Play audio helper - guarantees playback
+  const playAudio = () => {
+    if (audioRef.current) {
+      audioRef.current
+        .play()
+        .then(() => setMusicPlaying(true))
+        .catch(() => {
+          // Autoplay policy waiting for user interaction
+        });
+    }
+  };
+
+  // Always play audio with fallback on any user interaction and tab visibility change
   useEffect(() => {
-    const playAudio = () => {
+    const startAudio = () => {
       if (audioRef.current && audioRef.current.paused) {
         audioRef.current
           .play()
-          .then(() => {
-            setMusicPlaying(true);
-            document.removeEventListener("click", playAudio);
-            document.removeEventListener("touchstart", playAudio);
-          })
-          .catch((err) => {
-            console.log("Autoplay prevented:", err);
-          });
+          .then(() => setMusicPlaying(true))
+          .catch(() => {});
       }
     };
 
-    playAudio();
-    document.addEventListener("click", playAudio);
-    document.addEventListener("touchstart", playAudio);
+    // Attempt immediately on mount
+    startAudio();
+
+    // Trigger on any user interaction anywhere on the screen
+    const events = ["click", "touchstart", "touchend", "pointerdown", "keydown", "scroll"];
+    events.forEach((evt) => {
+      window.addEventListener(evt, startAudio, { passive: true });
+      document.addEventListener(evt, startAudio, { passive: true });
+    });
+
+    // Auto-resume if user switches tabs and comes back
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        startAudio();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      document.removeEventListener("click", playAudio);
-      document.removeEventListener("touchstart", playAudio);
+      events.forEach((evt) => {
+        window.removeEventListener(evt, startAudio);
+        document.removeEventListener(evt, startAudio);
+      });
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 
@@ -129,6 +150,7 @@ export default function App() {
   }, [currentPage, showCardModal]);
 
   const handleOpenCover = () => {
+    playAudio();
     setIsOpeningCover(true);
     setTimeout(() => {
       setCurrentPage(1);
@@ -136,23 +158,19 @@ export default function App() {
     }, 1100);
   };
 
-  const toggleMusic = (e) => {
+  // Ensure audio is always playing (never paused)
+  const ensureAudioPlaying = (e) => {
     e?.stopPropagation();
-    if (audioRef.current) {
-      if (musicPlaying) {
-        audioRef.current.pause();
-        setMusicPlaying(false);
-      } else {
-        audioRef.current.play().then(() => setMusicPlaying(true));
-      }
-    }
+    playAudio();
   };
 
   const nextPage = () => {
+    playAudio();
     setCurrentPage((prev) => Math.min(prev + 1, 3));
   };
 
   const prevPage = () => {
+    playAudio();
     setCurrentPage((prev) => Math.max(prev - 1, 0));
   };
 
@@ -234,12 +252,27 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#2D3B2D] font-sans selection:bg-[#EADBBE] relative overflow-x-hidden">
-      {/* Background Audio */}
+      {/* Background Audio - Always Playing & Looping */}
       <audio
         ref={audioRef}
         src="/wedding-song.mp3"
         loop
+        autoPlay
         preload="auto"
+        playsInline
+        onPlay={() => setMusicPlaying(true)}
+        onPause={() => {
+          // Guarantee audio always plays without staying paused
+          if (audioRef.current) {
+            audioRef.current.play().catch(() => {});
+          }
+        }}
+        onEnded={() => {
+          if (audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(() => {});
+          }
+        }}
         onError={(e) => console.log("Audio Error:", e)}
       />
 
@@ -323,23 +356,20 @@ export default function App() {
             <Share2 size={18} />
           </button>
 
-          {/* Audio Visualizer Button */}
-          <button
-            onClick={toggleMusic}
-            aria-label="Toggle Music"
-            className="bg-[#2D3B2D] text-[#FAF7F0] p-2.5 rounded-full shadow-lg border border-[#C5A04F]/40 hover:scale-105 transition-all flex items-center justify-center cursor-pointer"
+          {/* Always Playing Audio Visualizer Badge (No pause/play toggle) */}
+          <div
+            onClick={ensureAudioPlaying}
+            title="Playing Wedding Music"
+            aria-label="Playing Wedding Music"
+            className="bg-[#2D3B2D] text-[#FAF7F0] p-2.5 rounded-full shadow-lg border border-[#C5A04F]/40 flex items-center justify-center cursor-pointer select-none"
             style={{ width: "42px", height: "42px" }}
           >
-            {musicPlaying ? (
-              <div className="flex items-end gap-[2.5px] h-3.5 w-3.5 justify-center">
-                <span className="w-[2px] bg-[#FAF7F0] rounded-full animate-bar-1 h-full"></span>
-                <span className="w-[2px] bg-[#FAF7F0] rounded-full animate-bar-2 h-full"></span>
-                <span className="w-[2px] bg-[#FAF7F0] rounded-full animate-bar-3 h-full"></span>
-              </div>
-            ) : (
-              <VolumeX size={18} />
-            )}
-          </button>
+            <div className="flex items-end gap-[2.5px] h-3.5 w-3.5 justify-center">
+              <span className="w-[2px] bg-[#FAF7F0] rounded-full animate-bar-1 h-full"></span>
+              <span className="w-[2px] bg-[#FAF7F0] rounded-full animate-bar-2 h-full"></span>
+              <span className="w-[2px] bg-[#FAF7F0] rounded-full animate-bar-3 h-full"></span>
+            </div>
+          </div>
         </div>
 
         {/* Copied Link Toast */}
