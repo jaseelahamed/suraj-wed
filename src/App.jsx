@@ -158,11 +158,8 @@ export default function App() {
 
   // Google Maps navigation handler
   const handleNavigateTemple = () => {
-    const templeLocation = encodeURIComponent(
-      "Podippur Sree Madeva Temple, Poovathumchola, Kozhikode, Kerala"
-    );
     window.open(
-      `https://www.google.com/maps/search/?api=1&query=${templeLocation}`,
+      "https://www.google.com/maps/place/Sri+Maha+Siva+Temple,+Podippur/@11.5348794,75.8472031,17z/data=!3m1!4b1!4m6!3m5!1s0x3ba664d3842613d5:0x51cf59f412ace624!8m2!3d11.5348794!4d75.8472031!16s%2Fg%2F11ckvpy97v",
       "_blank"
     );
   };
@@ -502,7 +499,7 @@ export default function App() {
                             Podippur Sree Madeva Temple
                           </p>
                           <p className="text-[10px] text-[#6B7862] leading-tight">
-                            Poovathumchola, Kozhikode, Kerala
+                            Podippur, Koorachunde, Kanthalad, Kayanna, Keralam 673527
                           </p>
                         </div>
                       </div>
@@ -517,7 +514,7 @@ export default function App() {
                         <MapPin size={12} /> Navigate Map
                       </button>
                       <a
-                        href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Sooraj+%26+Akhila+Wedding+Muhoortham&dates=20261122T050000Z/20261122T060000Z&details=With+great+joy%2C+you+are+warmly+invited+to+attend+the+Muhoortham+ceremony+of+Sooraj+%26+Akhila+at+Podippur+Sree+Madeva+Temple%2C+Poovathumchola.&location=Podippur+Sree+Madeva+Temple%2C+Poovathumchola%2C+Kozhikode%2C+Kerala"
+                        href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Sooraj+%26+Akhila+Wedding+Muhoortham&dates=20261122T050000Z/20261122T060000Z&details=With+great+joy%2C+you+are+warmly+invited+to+attend+the+Muhoortham+ceremony+of+Sooraj+%26+Akhila+at+Podippur+Sree+Madeva+Temple.&location=Sri+Maha+Siva+Temple%2C+Podippur%2C+Koorachunde%2C+Kanthalad%2C+Kayanna%2C+Keralam+673527"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 py-1.5 px-2 border border-[#C5A04F]/60 text-[#2D3B2D] hover:bg-[#F4EFEB] text-[10px] font-bold rounded-lg transition-colors"
