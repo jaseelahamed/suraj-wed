@@ -54,34 +54,78 @@ export default function App() {
     setParticles(generated);
   }, []);
 
-  // Play audio helper - guarantees playback
+  // Web Audio Context unlocker + HTML5 Audio playback helper
   const playAudio = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!window._weddingAudioCtx) {
+          window._weddingAudioCtx = new AudioCtx();
+        }
+        if (window._weddingAudioCtx.state === "suspended") {
+          window._weddingAudioCtx.resume();
+        }
+      }
+    } catch (e) {}
+
     if (audioRef.current) {
-      audioRef.current
-        .play()
-        .then(() => setMusicPlaying(true))
-        .catch(() => {
-          // Autoplay policy waiting for user interaction
-        });
+      const promise = audioRef.current.play();
+      if (promise !== undefined) {
+        promise
+          .then(() => setMusicPlaying(true))
+          .catch(() => {
+            // Autoplay policy waiting for user interaction or buffering
+          });
+      }
     }
   };
 
-  // Always play audio with fallback on any user interaction and tab visibility change
+  // Immediate autoplay on load, with retry polling and universal interaction triggers
   useEffect(() => {
     const startAudio = () => {
-      if (audioRef.current && audioRef.current.paused) {
-        audioRef.current
-          .play()
-          .then(() => setMusicPlaying(true))
-          .catch(() => {});
-      }
+      playAudio();
     };
 
-    // Attempt immediately on mount
+    // Immediate attempt on component mount
     startAudio();
 
-    // Trigger on any user interaction anywhere on the screen
-    const events = ["click", "touchstart", "touchend", "pointerdown", "keydown", "scroll"];
+    // Active retry polling every 250ms for the first 8 seconds until music is playing
+    const retryTimer = setInterval(() => {
+      if (audioRef.current && !audioRef.current.paused) {
+        setMusicPlaying(true);
+        clearInterval(retryTimer);
+      } else {
+        startAudio();
+      }
+    }, 250);
+
+    const stopRetryTimer = setTimeout(() => {
+      clearInterval(retryTimer);
+    }, 8000);
+
+    // Universal interaction triggers across all devices and input types
+    const events = [
+      "click",
+      "touchstart",
+      "touchend",
+      "touchmove",
+      "pointerdown",
+      "pointerup",
+      "pointermove",
+      "pointerover",
+      "pointerenter",
+      "mousedown",
+      "mouseup",
+      "mousemove",
+      "mouseenter",
+      "mouseover",
+      "keydown",
+      "keyup",
+      "scroll",
+      "wheel",
+      "focus",
+    ];
+
     events.forEach((evt) => {
       window.addEventListener(evt, startAudio, { passive: true });
       document.addEventListener(evt, startAudio, { passive: true });
@@ -96,6 +140,8 @@ export default function App() {
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      clearInterval(retryTimer);
+      clearTimeout(stopRetryTimer);
       events.forEach((evt) => {
         window.removeEventListener(evt, startAudio);
         document.removeEventListener(evt, startAudio);
@@ -260,6 +306,10 @@ export default function App() {
         autoPlay
         preload="auto"
         playsInline
+        onCanPlay={playAudio}
+        onCanPlayThrough={playAudio}
+        onLoadedData={playAudio}
+        onLoadedMetadata={playAudio}
         onPlay={() => setMusicPlaying(true)}
         onPause={() => {
           // Guarantee audio always plays without staying paused
@@ -806,6 +856,9 @@ export default function App() {
           {currentPage === 0 && (
             <div
               onClick={handleOpenCover}
+              onMouseEnter={playAudio}
+              onPointerDown={playAudio}
+              onTouchStart={playAudio}
               className={`absolute inset-0 bg-[#FAF7F0] rounded-3xl shadow-2xl z-20 overflow-hidden border-2 border-[#C5A04F]/40 book-cover-wrapper flex flex-col justify-between p-4 cursor-pointer group ${
                 isOpeningCover ? "book-cover-open" : ""
               }`}
